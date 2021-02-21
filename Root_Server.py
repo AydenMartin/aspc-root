@@ -1,10 +1,11 @@
+# This class handles communication with branch_leaf
 import socket
-
+import SpringDB_Requests as DBR
 host = ''
 port = 5560
 n_connections = 1
 storedReply = ''
-def ServerSetup():
+def server_setup():
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         s.bind(host, port)
@@ -21,12 +22,12 @@ def REPEAT(data):
     reply = data[1]
     return reply
 
-def InitializeConnection():
+def initialize_connection():
     s.listen(n_connections)
     connection, address = s.accept()
     return connection
 
-def DataTransfer(connection):
+def data_transfer(connection):
     while True:
         data = connection.recv(1024)
         data = data.decode("utf-8")
@@ -42,15 +43,17 @@ def DataTransfer(connection):
         elif cmd == 'KILL':
             s.close();
             break
+        elif cmd == 'PUT':
+            DBR.newData(message[1])
         else:
             reply = 'Unkn'
 
         connection.sendall(str.encode(reply))
 
-s = ServerSetup()
+s = server_setup()
 while True:
     try:
-        connection = ServerSetup()
-        DataTransfer(connection)
+        connection = server_setup()
+        data_transfer(connection)
     except:
         break
