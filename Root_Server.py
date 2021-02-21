@@ -1,59 +1,61 @@
-# This class handles communication with branch_leaf
 import socket
-import SpringDB_Requests as DBR
-host = ''
-port = 5560
-n_connections = 1
-storedReply = ''
-def server_setup():
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+import SpringDB_Requests as requests
+host = '127.0.0.1'
+port = 5571
+
+def setup_server():
+    sckt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    print("Socket created.")
     try:
-        s.bind(host, port)
+        sckt.bind((host, port))
     except socket.error as msg:
-        none = None
-        #Dosomething
+        print(msg)
+    print("Socket bind complete.")
+    return sckt
 
-    return s
-def GET():
-    reply = storedReply
-    return reply
 
-def REPEAT(data):
-    reply = data[1]
-    return reply
-
-def initialize_connection():
-    s.listen(n_connections)
+def setup_connection():
+    s.listen(1)  # Allows one connection at a time.
     connection, address = s.accept()
+    print("Connected to: " + address[0] + ":" + str(address[1]))
     return connection
 
-def data_transfer(connection):
+
+def PROCESS(data):
+    requests.new_data(data)
+
+
+def data_transfer(conn):
+    # A big loop that sends/receives data until told not to.
     while True:
-        data = connection.recv(1024)
-        data = data.decode("utf-8")
-        #Parse and process recieved data
-        message = data.split(' ', 1)
-        cmd = message[0]
-        if cmd == 'GET':
-            reply = GET()
-        elif cmd == 'REPEAT':
-            reply = REPEAT(message)
-        elif cmd == 'EXIT':
+        # Receive the data
+        data = conn.recv(1024)  # receive the data
+        data = data.decode('utf-8')
+        # Split the data such that you separate the command
+        # from the rest of the data.
+        dataMessage = data.split(':', 1)
+        command = dataMessage[0]
+        if command == 'EXIT':
             break
-        elif cmd == 'KILL':
-            s.close();
+        elif command == 'KILL':
+            s.close()
             break
-        elif cmd == 'PUT':
-            DBR.newData(message[1])
+        elif command == 'PUT':
+            PROCESS(data)
+            reply = 'Command Received'
+        elif command == 'TEST':
+            reply = "Message: " + dataMessage[1]
         else:
-            reply = 'Unkn'
+            reply = 'Unable to process'
+        conn.sendall(str.encode(reply))
+    conn.close()
 
-        connection.sendall(str.encode(reply))
 
-s = server_setup()
+s = setup_server()
+
 while True:
     try:
-        connection = server_setup()
-        data_transfer(connection)
+        conn = setup_connection()
+        data_transfer(conn)
     except:
         break
