@@ -43,6 +43,8 @@ def data_transfer(conn):
         elif command == 'PUT':
             PROCESS(data)
             reply = 'Command Received'
+        elif command == 'TEST':
+            reply = "Message: " + dataMessage[1]
         else:
             reply = 'Unable to process'
         conn.sendall(str.encode(reply))
