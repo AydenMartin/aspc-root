@@ -17,17 +17,22 @@ def initialize_db():
     conn.close()
 
 
-# return a job with the matching id
+# return a job with the matching id or None
+# also returns an error if one occurred
 def get_job(id):
     conn = sqlite3.connect(file_path)
     c = conn.cursor()
-    c.execute('''SELECT * FROM jobs WHERE id = {:d}'''.format(id))
+    try:
+        c.execute('''SELECT * FROM jobs WHERE id = {:d}'''.format(id))
+    except sqlite3.Error as err:
+        conn.close()
+        return None, err
     row = c.fetchone()
     conn.close()
-    return row
+    return row, None
 
 
-# insert a job into the table
+# insert a job into the table and return an error if one occurred
 def insert_job(id, **columns):
     insert_cols = "id"
     insert_values = str(id)
@@ -38,12 +43,18 @@ def insert_job(id, **columns):
         insert_values += ", " + ", ".join(columns.values())
     conn = sqlite3.connect(file_path)
     c = conn.cursor()
-    c.execute('''INSERT INTO jobs ({}) VALUES ({})'''.format(insert_cols, insert_values))
-    conn.commit()
+    try:
+        c.execute('''INSERT INTO jobs ({}) VALUES ({})'''.format(insert_cols, insert_values))
+        conn.commit()
+    except sqlite3.Error as err:
+        conn.close()
+        return err
     conn.close()
+    return None
 
 
-# update a job with the matching id and return the old row
+# update a job with the matching id and return the old row or None
+# returns an error if one occurred
 def update_job(id, **columns):
     col_list = []
     for k in columns.keys():
@@ -51,21 +62,30 @@ def update_job(id, **columns):
     update_str = ", ".join(col_list)
     conn = sqlite3.connect(file_path)
     c = conn.cursor()
-    c.execute('''SELECT * FROM jobs WHERE id = {:d}'''.format(id))
-    row = c.fetchone()
-    c.execute('''UPDATE jobs SET {} WHERE id = {:d}'''.format(update_str, id))
-    conn.commit()
+    try:
+        c.execute('''SELECT * FROM jobs WHERE id = {:d}'''.format(id))
+        row = c.fetchone()
+        c.execute('''UPDATE jobs SET {} WHERE id = {:d}'''.format(update_str, id))
+        conn.commit()
+    except sqlite3.Error as err:
+        conn.close()
+        return None, err
     conn.close()
-    return row
+    return row, None
 
 
-# delete a job from the table and return the row that was deleted
+# delete a job from the table and return the row that was deleted or None
+# also returns an error if one occurred
 def delete_job(id):
     conn = sqlite3.connect(file_path)
     c = conn.cursor()
-    c.execute('''SELECT * FROM jobs WHERE id = {:d}'''.format(id))
-    row = c.fetchone()
-    c.execute('''DELETE FROM jobs WHERE id = {:d}'''.format(id))
-    conn.commit()
+    try:
+        c.execute('''SELECT * FROM jobs WHERE id = {:d}'''.format(id))
+        row = c.fetchone()
+        c.execute('''DELETE FROM jobs WHERE id = {:d}'''.format(id))
+        conn.commit()
+    except sqlite3.Error as err:
+        conn.close()
+        return None, err
     conn.close()
-    return row
+    return row, None
