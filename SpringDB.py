@@ -3,6 +3,7 @@ import os.path as path
 
 job_cols = {"id": 0, "prog": 1, "scrap": 2, "rate": 3}
 ws_cols = {"id": 0, "jobid": 1, "partnum": 2, "capacity": 3, "conversion": 4, "threshold": 5}
+tables = {0: "jobs", 1: "workstations"}
 
 
 class DataBase:
@@ -54,6 +55,8 @@ class DataBase:
         except sqlite3.Error as err:
             return None, err
         c = conn.cursor()
+        if type(table) == int and table < len(tables):
+            table = tables[table]
         try:
             c.execute('''SELECT * FROM {} WHERE id = {:d}'''.format(table, id))
         except sqlite3.Error as err:
@@ -67,10 +70,15 @@ class DataBase:
     def insert(self, table, id, **columns):
         if not self.initialized:
             return RuntimeError("DB not initialized")
+        if type(table) == int and table < len(tables):
+            table = tables[table]
         insert_cols = "id"
         insert_values = str(id)
         for k in columns.keys():
-            columns[k] = str(columns[k])
+            if columns[k] is None:
+                columns[k] = "NULL"
+            else:
+                columns[k] = str(columns[k])
         if len(columns) > 0:
             insert_cols += ", " + ", ".join(columns.keys())
             insert_values += ", " + ", ".join(columns.values())
@@ -93,9 +101,14 @@ class DataBase:
     def update(self, table, id, **columns):
         if not self.initialized:
             return None, RuntimeError("DB not initialized")
+        if type(table) == int and table < len(tables):
+            table = tables[table]
         col_list = []
         for k in columns.keys():
-            col_list.append(k + " = " + str(columns[k]))
+            if columns[k] is None:
+                col_list.append(k + " = NULL")
+            else:
+                col_list.append(k + " = " + str(columns[k]))
         update_str = ", ".join(col_list)
         try:
             conn = sqlite3.connect(self.file_path)
@@ -123,6 +136,8 @@ class DataBase:
         except sqlite3.Error as err:
             return None, err
         c = conn.cursor()
+        if type(table) == int and table < len(tables):
+            table = tables[table]
         try:
             c.execute('''SELECT * FROM {} WHERE id = {:d}'''.format(table, id))
             row = c.fetchone()
