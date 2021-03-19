@@ -2,7 +2,7 @@ import sqlite3
 import os.path as path
 
 job_cols = {"id": 0, "prog": 1, "scrap": 2, "rate": 3}
-ws_cols = {"id": 0, "jobid": 1, "partnum": 2, "capacity": 3, "conversion": 4, "threshold": 5}
+ws_cols = {"id": 0, "jobid": 1, "partnum": 2, "capacity": 3, "conversion": 4, "threshold": 5, "status": 6}
 tables = {0: "jobs", 1: "workstations"}
 
 
@@ -19,6 +19,8 @@ class DataBase:
 
     # create tables and insert some sample rows
     def initialize_db(self):
+        if self.initialized:
+            return RuntimeError('Db already initialized')
         try:
             conn = sqlite3.connect(self.file_path)
         except sqlite3.Error as err:
@@ -31,11 +33,15 @@ class DataBase:
         c.execute('''INSERT INTO jobs (id, prog, scrap, rate) VALUES (4, 12.50, 50, 5.54)''')
 
         c.execute('''CREATE TABLE workstations (id int PRIMARY KEY, jobid int, partnum int, capacity int, conversion 
-        decimal(5, 2), threshold int, FOREIGN KEY (jobid) REFERENCES jobs (id))''')
-        c.execute('''INSERT INTO workstations (id, capacity, conversion, threshold) VALUES (1, 250, 12.3, 50)''')
-        c.execute('''INSERT INTO workstations (id, capacity, conversion, threshold) VALUES (2, 124, 6.67, 50)''')
-        c.execute('''INSERT INTO workstations (id, capacity, conversion, threshold) VALUES (3, 225, 9.00, 50)''')
-        c.execute('''INSERT INTO workstations (id, capacity, conversion, threshold) VALUES (4, 100, 5.55, 50)''')
+        decimal(5, 2), threshold int, status varchar(50), FOREIGN KEY (jobid) REFERENCES jobs (id))''')
+        c.execute('''INSERT INTO workstations (id, capacity, conversion,threshold, status) 
+        VALUES (1, 250, 12.3, 50, 'IDLE')''')
+        c.execute('''INSERT INTO workstations (id, capacity, conversion, threshold, status) 
+        VALUES (2, 124, 6.67, 50, 'IDLE')''')
+        c.execute('''INSERT INTO workstations (id, capacity, conversion, threshold, status) 
+        VALUES (3, 225, 9.00, 50, 'IDLE')''')
+        c.execute('''INSERT INTO workstations (id, capacity, conversion, threshold, status) 
+        VALUES (4, 100, 5.55, 50, 'IDLE')''')
         conn.commit()
         conn.close()
         self.initialized = True
@@ -149,3 +155,20 @@ class DataBase:
         conn.close()
         return row, None
 
+    def clear_tables(self):
+        if not self.initialized:
+            return RuntimeError("DB not initialized")
+        try:
+            conn = sqlite3.connect(self.file_path)
+        except sqlite3.Error as err:
+            return err
+        c = conn.cursor()
+        try:
+            for t in tables:
+                c.execute('''DELETE FROM {}'''.format(tables[t]))
+            conn.commit()
+        except sqlite3.Error as err:
+            conn.close()
+            return err
+        conn.close()
+        return None
