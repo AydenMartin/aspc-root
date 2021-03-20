@@ -83,6 +83,8 @@ class DataBase:
         for k in columns.keys():
             if columns[k] is None:
                 columns[k] = "NULL"
+            elif type(columns[k]) == str:
+                columns[k] = "'" + columns[k] + "'"
             else:
                 columns[k] = str(columns[k])
         if len(columns) > 0:
@@ -113,6 +115,8 @@ class DataBase:
         for k in columns.keys():
             if columns[k] is None:
                 col_list.append(k + " = NULL")
+            elif type(columns[k]) == str:
+                col_list.append(k + " = '" + columns[k] + "'")
             else:
                 col_list.append(k + " = " + str(columns[k]))
         update_str = ", ".join(col_list)
