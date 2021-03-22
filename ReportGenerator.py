@@ -57,3 +57,47 @@ def genSigStrGraph_Example():
 
 
     plt.savefig("Charts/speed.jpg", dpi=300)
+
+def piePlot():
+    cars = ['Production', 'Setup', 'Remaining']
+
+    data = [23, 5, 35]
+
+    # Creating explode data
+    explode = (0.0, 0.2, 0.0)
+
+    # Creating color parameters
+    colors = ("orange", "red", "#d3d3d3")
+
+    # Wedge properties
+    wp = {'linewidth': 1, 'edgecolor': "Black"}
+
+    # Creating autocpt arguments
+    def func(pct, allvalues):
+        absolute = int(pct / 100. * np.sum(allvalues))
+        return "{:.1f}%\n({:d} g)".format(pct, absolute)
+
+        # Creating plot
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    wedges, texts= ax.pie(data,
+
+                                      explode=explode,
+                                      shadow=True,
+                                      colors=colors,
+                                      startangle=90,
+                                      wedgeprops=wp,
+                                      textprops=dict(color="black"))
+
+    # Adding legend
+    ax.legend(wedges, cars,
+              prop = {'size': 16},
+              title="Cars",
+              loc="center left",
+              bbox_to_anchor=(1, 0, 0.5, 1))
+
+
+    ax.set_title("Customizing pie chart")
+
+    # show plot
+    plt.savefig("Charts/pie.jpg", dpi=300)
