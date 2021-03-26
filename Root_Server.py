@@ -1,7 +1,21 @@
 import socket
 import SpringDB_Requests as requests
-host = '127.0.0.1'
-port = 5571
+import threading
+import json
+host = '127.0.0.1'  #127 == local, use wlan ip for non local connection
+port = 5571         #any port is fine, just make sure both parties know it
+
+
+
+jsonFormat = {"part_id" : 0,         #id for the type of part being made
+              "work_id": 0,          #id of the workstation being used
+              "job_id": 0,           #id for the job being performed
+              "part_len": 0.0,       #length of the part being made aka how much raw material is used
+              "part_type": "",       #type of part being made
+              "part_capacity": 100}  #how many parts the job requires to be made
+
+
+
 
 def setup_server():
     sckt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -11,14 +25,17 @@ def setup_server():
     except socket.error as msg:
         print(msg)
     print("Socket bind complete.")
-    return sckt
+    sckt.listen(10)
+    setup_connection(sckt)
 
 
-def setup_connection():
-    s.listen(1)  # Allows one connection at a time.
-    connection, address = s.accept()
+def setup_connection(socket):
+
+    connection, address = socket.accept()
     print("Connected to: " + address[0] + ":" + str(address[1]))
-    return connection
+    t = threading.Thread(target=data_transfer,args=(connection,))
+    t.start()
+    setup_connection(socket)
 
 
 def PROCESS(data):
@@ -29,33 +46,24 @@ def data_transfer(conn):
     # A big loop that sends/receives data until told not to.
     while True:
         # Receive the data
-        data = conn.recv(1024)  # receive the data
-        data = data.decode('utf-8')
-        # Split the data such that you separate the command
-        # from the rest of the data.
-        dataMessage = data.split(':', 1)
-        command = dataMessage[0]
-        if command == 'EXIT':
-            break
-        elif command == 'KILL':
-            s.close()
-            break
-        elif command == 'PUT':
-            PROCESS(data)
-            reply = 'Command Received'
-        elif command == 'TEST':
-            reply = "Message: " + dataMessage[1]
-        else:
-            reply = 'Unable to process'
-        conn.sendall(str.encode(reply))
+        #time.sleep(2)
+        try:
+            data = conn.recv(1024)  # receive the data
+        except:
+            print("connection closed")
+            conn.close
+            exit()
+
+        print(data.decode("utf-8"))
+
+        try:
+            conn.sendall(json.dumps(jsonFormat).encode("utf-8"))
+        except Exception as ex:
+            print("connection closed due to \n" + str(ex))
+            conn.close
+            exit()
+
     conn.close()
 
 
 s = setup_server()
-
-while True:
-    try:
-        conn = setup_connection()
-        data_transfer(conn)
-    except:
-        break
