@@ -178,3 +178,22 @@ class DataBase:
             return err
         conn.close()
         return None
+
+    def exists(self, table, id):
+        if not self.__initialized:
+            return None, RuntimeError("DB not initialized")
+        try:
+            conn = sqlite3.connect(self.file_path)
+        except sqlite3.Error as err:
+            return None, err
+        c = conn.cursor()
+        if type(table) == int and table < len(tables):
+            table = tables[table]
+        try:
+            c.execute("SELECT COUNT(*) FROM {} WHERE id = '{}'".format(table, id))
+            count = c.fetchone()[0]
+        except sqlite3.Error as err:
+            conn.close()
+            return None, err
+        conn.close()
+        return count != 0, None
