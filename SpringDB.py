@@ -58,15 +58,17 @@ class DataBase:
     def get(self, table, id):
         if not self.__initialized:
             return None, RuntimeError("DB not initialized")
+        if type(table) == int and table < len(tables):
+            table = tables[table]
+        if table not in tables.values():
+            return None, RuntimeError("Invalid table")
         try:
             conn = sqlite3.connect(self.file_path)
         except sqlite3.Error as err:
             return None, err
         c = conn.cursor()
-        if type(table) == int and table < len(tables):
-            table = tables[table]
         try:
-            c.execute("SELECT * FROM {} WHERE id = '{}'".format(table, id))
+            c.execute("SELECT * FROM {} WHERE id = ?".format(table), (id,))
         except sqlite3.Error as err:
             conn.close()
             return None, err
@@ -80,25 +82,23 @@ class DataBase:
             return RuntimeError("DB not initialized")
         if type(table) == int and table < len(tables):
             table = tables[table]
+        if table not in tables.values():
+            return None, RuntimeError("Invalid table")
         insert_cols = "id"
-        insert_values = "'" + str(id) + "'"
+        insert_values = "?"
         for k in columns.keys():
-            if columns[k] is None:
-                columns[k] = "NULL"
-            elif type(columns[k]) == str:
-                columns[k] = "'" + columns[k] + "'"
-            else:
-                columns[k] = str(columns[k])
-        if len(columns) > 0:
-            insert_cols += ", " + ", ".join(columns.keys())
-            insert_values += ", " + ", ".join(columns.values())
+            if k not in job_cols and k not in ws_cols:
+                return None, RuntimeError("Invalid column name")
+            insert_cols += ", " + k
+            insert_values += ", ?"
         try:
             conn = sqlite3.connect(self.file_path)
         except sqlite3.Error as err:
             return err
         c = conn.cursor()
         try:
-            c.execute('''INSERT INTO {} ({}) VALUES ({})'''.format(table, insert_cols, insert_values))
+            c.execute('''INSERT INTO {} ({}) VALUES ({})'''.format(table, insert_cols, insert_values),
+                      (id,) + tuple(columns.values()))
             conn.commit()
         except sqlite3.Error as err:
             conn.close()
@@ -113,14 +113,13 @@ class DataBase:
             return None, RuntimeError("DB not initialized")
         if type(table) == int and table < len(tables):
             table = tables[table]
+        if table not in tables.values():
+            return None, RuntimeError("Invalid table")
         col_list = []
         for k in columns.keys():
-            if columns[k] is None:
-                col_list.append(k + " = NULL")
-            elif type(columns[k]) == str:
-                col_list.append(k + " = '" + columns[k] + "'")
-            else:
-                col_list.append(k + " = " + str(columns[k]))
+            if k not in job_cols and k not in ws_cols:
+                return None, RuntimeError("Invalid column name")
+            col_list.append(k + " = ?")
         update_str = ", ".join(col_list)
         try:
             conn = sqlite3.connect(self.file_path)
@@ -128,9 +127,9 @@ class DataBase:
             return None, err
         c = conn.cursor()
         try:
-            c.execute("SELECT * FROM {} WHERE id = '{}'".format(table, id))
+            c.execute("SELECT * FROM {} WHERE id = ?".format(table), (id,))
             row = c.fetchone()
-            c.execute("UPDATE {} SET {} WHERE id = '{}'".format(table, update_str, id))
+            c.execute("UPDATE {} SET {} WHERE id = ?".format(table, update_str), tuple(columns.values()) + (id,))
             conn.commit()
         except sqlite3.Error as err:
             conn.close()
@@ -143,17 +142,19 @@ class DataBase:
     def delete(self, table, id):
         if not self.__initialized:
             return None, RuntimeError("DB not initialized")
+        if type(table) == int and table < len(tables):
+            table = tables[table]
+        if table not in tables.values():
+            return None, RuntimeError("Invalid table")
         try:
             conn = sqlite3.connect(self.file_path)
         except sqlite3.Error as err:
             return None, err
         c = conn.cursor()
-        if type(table) == int and table < len(tables):
-            table = tables[table]
         try:
-            c.execute("SELECT * FROM {} WHERE id = '{}'".format(table, id))
+            c.execute("SELECT * FROM {} WHERE id = ?".format(table), (id,))
             row = c.fetchone()
-            c.execute("DELETE FROM {} WHERE id = '{}'".format(table, id))
+            c.execute("DELETE FROM {} WHERE id = ?".format(table), (id,))
             conn.commit()
         except sqlite3.Error as err:
             conn.close()
@@ -182,15 +183,17 @@ class DataBase:
     def exists(self, table, id):
         if not self.__initialized:
             return None, RuntimeError("DB not initialized")
+        if type(table) == int and table < len(tables):
+            table = tables[table]
+        if table not in tables.values():
+            return None, RuntimeError("Invalid table")
         try:
             conn = sqlite3.connect(self.file_path)
         except sqlite3.Error as err:
             return None, err
         c = conn.cursor()
-        if type(table) == int and table < len(tables):
-            table = tables[table]
         try:
-            c.execute("SELECT COUNT(*) FROM {} WHERE id = '{}'".format(table, id))
+            c.execute("SELECT COUNT(*) FROM {} WHERE id = ?".format(table), (id,))
             count = c.fetchone()[0]
         except sqlite3.Error as err:
             conn.close()
