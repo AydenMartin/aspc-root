@@ -1,18 +1,20 @@
 import sqlite3
-import os.path as path
+import os
 
-job_cols = {"id": 0, "prog": 1, "scrap": 2, "rate": 3}
-ws_cols = {"id": 0, "jobid": 1, "partnum": 2, "capacity": 3, "conversion": 4, "threshold": 5, "status": 6}
-tables = {0: "jobs", 1: "workcenters"}
+col_dict = {"jobs": {"id": 0, "partid": 1, "capacity": 2, "scrap": 3, "rate": 4, "input_length": 5, "output_detected": 6, "finished_length_raw": 7, "time_started": 8, "time_ended": 9},
+           "workcenters": {"id": 0, "jobid": 1, "feed_wheel_diameter": 2, "output_toggle": 3, "threshold": 4, "state": 5},
+           "parts": {"id": 0, "part_length": 1, "part_num": 2, "part_type": 3, "part_bool": 4}}
+tables = {0: "jobs", 1: "workcenters", 2: "parts"}
+bool_vals = {"parts": 4, "workcenters": 3}
 
 
 class DataBase:
 
     def __init__(self, file_path='C:\\Users\\tlham\\Documents\\spring.db'):
-        if path.splitext(file_path)[1] != ".db":
+        if os.path.splitext(file_path)[1] != ".db":
             raise RuntimeError("Invalid file")
         self.file_path = file_path
-        if path.exists(self.file_path):
+        if os.path.exists(self.file_path):
             self.__initialized = True
         else:
             self.__initialized = False
@@ -26,25 +28,37 @@ class DataBase:
         except sqlite3.Error as err:
             return err
         c = conn.cursor()
-        c.execute('''CREATE TABLE jobs (id varchar(30) PRIMARY KEY, prog decimal(5, 2),
-         scrap int, rate decimal(5, 2))''')
-        c.execute('''INSERT INTO jobs (id, prog, scrap, rate) VALUES ('1', 6.00, 50, 3.14)''')
-        c.execute('''INSERT INTO jobs (id, prog, scrap, rate) VALUES ('2', 7.45, 50, 0)''')
-        c.execute('''INSERT INTO jobs (id, prog, scrap, rate) VALUES ('3', 3.60, 50, 4.56)''')
-        c.execute('''INSERT INTO jobs (id, prog, scrap, rate) VALUES ('4', 12.50, 50, 5.54)''')
+        try:
+            c.execute('''CREATE TABLE parts (id varchar(30) PRIMARY KEY, part_length decimal(5, 2) DEFAULT 0.0, 
+            part_num varchar(6), part_type varchar(50), part_bool boolean DEFAULT 0 CHECK (part_bool IN (0, 1)))''')
+            c.execute('''INSERT INTO parts (id, part_length, part_num, part_type, part_bool) VALUES ('1', 12.32, 
+            'aa00aa', 'extender', 1)''')
+            c.execute('''INSERT INTO parts (id, part_num, part_type) VALUES ('2', 'aa00aa', 'pin')''')
+            c.execute('''INSERT INTO parts (id, part_length, part_num, part_type, part_bool) VALUES ('3', 7.77, 
+            'ac01aa', 'something', 1)''')
+            c.execute('''INSERT INTO parts (id, part_num, part_type) VALUES ('4', 'ba00ab', 'other')''')
 
-        c.execute('''CREATE TABLE workcenters (id varchar(30) PRIMARY KEY, jobid varchar(30), partnum varchar(6), 
-        capacity int, conversion decimal(5, 2), threshold int, status varchar(50), FOREIGN KEY (jobid) REFERENCES 
-        jobs (id))''')
-        c.execute('''INSERT INTO workcenters (id, capacity, conversion,threshold, status) 
-        VALUES ('1', 250, 12.3, 50, 'IDLE')''')
-        c.execute('''INSERT INTO workcenters (id, capacity, conversion, threshold, status) 
-        VALUES ('2', 124, 6.67, 50, 'IDLE')''')
-        c.execute('''INSERT INTO workcenters (id, capacity, conversion, threshold, status) 
-        VALUES ('3', 225, 9.00, 50, 'IDLE')''')
-        c.execute('''INSERT INTO workcenters (id, capacity, conversion, threshold, status) 
-        VALUES ('4', 100, 5.55, 50, 'IDLE')''')
-        conn.commit()
+            c.execute('''CREATE TABLE jobs (id varchar(30) PRIMARY KEY, partid varchar(30), capacity int, scrap int 
+            DEFAULT 0, rate decimal(5, 2) DEFAULT 0.0, input_length int, output_detected int, finished_length_raw 
+            int, time_started int, time_ended int, FOREIGN KEY (partid) REFERENCES parts (id))''')
+            c.execute('''INSERT INTO jobs (id, partid, capacity, rate) VALUES ('1', '1', 50, 0.0)''')
+            c.execute('''INSERT INTO jobs (id, partid, capacity, scrap) VALUES ('2', '2', 100, 45)''')
+            c.execute('''INSERT INTO jobs (id, partid, capacity, time_started) VALUES ('3', '1', 120, 112020)''')
+            c.execute('''INSERT INTO jobs (id, partid, capacity, output_detected) VALUES ('4', '3', 25, 20)''')
+
+            c.execute('''CREATE TABLE workcenters (id varchar(30) PRIMARY KEY, jobid varchar(30), feed_wheel_diameter 
+            decimal(5, 2), output_toggle boolean DEFAULT 0 CHECK (output_toggle IN (0, 1)), threshold int DEFAULT 50, 
+            state int DEFAULT 0, FOREIGN KEY (jobid) REFERENCES jobs (id))''')
+            c.execute('''INSERT INTO workcenters (id, state, feed_wheel_diameter, output_toggle) VALUES ('1', 0, 
+            2.34, 1)''')
+            c.execute('''INSERT INTO workcenters (id, jobid, state, threshold) VALUES ('2', '1', 1, 45)''')
+            c.execute('''INSERT INTO workcenters (id, jobid, state) VALUES ('3', '2', 0)''')
+            c.execute('''INSERT INTO workcenters (id, state, output_toggle) VALUES ('4', 1, 1)''')
+            conn.commit()
+        except sqlite3.Error as err:
+            conn.close()
+            os.remove(self.file_path)
+            return err
         conn.close()
         self.__initialized = True
         return None
@@ -73,8 +87,11 @@ class DataBase:
             conn.close()
             return None, err
         row = c.fetchone()
+        newrow = list(row)
+        if table in bool_vals:
+            newrow[bool_vals[table]] = bool(newrow[bool_vals[table]])
         conn.close()
-        return row, None
+        return tuple(newrow), None
 
     # insert a job into the table and return an error if one occurred
     def insert(self, table, id, **columns):
@@ -87,7 +104,7 @@ class DataBase:
         insert_cols = "id"
         insert_values = "?"
         for k in columns.keys():
-            if k not in job_cols and k not in ws_cols:
+            if k not in col_dict[table]:
                 return None, RuntimeError("Invalid column name")
             insert_cols += ", " + k
             insert_values += ", ?"
@@ -117,7 +134,7 @@ class DataBase:
             return None, RuntimeError("Invalid table")
         col_list = []
         for k in columns.keys():
-            if k not in job_cols and k not in ws_cols:
+            if k not in col_dict[table]:
                 return None, RuntimeError("Invalid column name")
             col_list.append(k + " = ?")
         update_str = ", ".join(col_list)
@@ -129,13 +146,16 @@ class DataBase:
         try:
             c.execute("SELECT * FROM {} WHERE id = ?".format(table), (id,))
             row = c.fetchone()
+            newrow = list(row)
+            if table in bool_vals:
+                newrow[bool_vals[table]] = bool(newrow[bool_vals[table]])
             c.execute("UPDATE {} SET {} WHERE id = ?".format(table, update_str), tuple(columns.values()) + (id,))
             conn.commit()
         except sqlite3.Error as err:
             conn.close()
             return None, err
         conn.close()
-        return row, None
+        return tuple(newrow), None
 
     # delete a job from the table and return the row that was deleted or None
     # also returns an error if one occurred
@@ -154,13 +174,16 @@ class DataBase:
         try:
             c.execute("SELECT * FROM {} WHERE id = ?".format(table), (id,))
             row = c.fetchone()
+            newrow = list(row)
+            if table in bool_vals:
+                newrow[bool_vals[table]] = bool(newrow[bool_vals[table]])
             c.execute("DELETE FROM {} WHERE id = ?".format(table), (id,))
             conn.commit()
         except sqlite3.Error as err:
             conn.close()
             return None, err
         conn.close()
-        return row, None
+        return tuple(newrow), None
 
     def clear_tables(self):
         if not self.__initialized:
