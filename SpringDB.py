@@ -1,8 +1,10 @@
 import sqlite3
 import os
 
-col_dict = {"jobs": {"id": 0, "partid": 1, "capacity": 2, "scrap": 3, "rate": 4, "input_length": 5, "output_detected": 6, "finished_length_raw": 7, "time_started": 8, "time_ended": 9},
-           "workcenters": {"id": 0, "jobid": 1, "feed_wheel_diameter": 2, "output_toggle": 3, "threshold": 4, "state": 5},
+col_dict = {"jobs": {"id": 0, "partid": 1, "capacity": 2, "completed": 3, "scrap": 4},
+           "workcenters": {"id": 0, "jobid": 1, "feed_wheel_diameter": 2, "output_toggle": 3, "threshold": 4,
+                           "state": 5, "rate": 6, "input_length": 7, "output_detected": 8,
+                           "finished_length_raw": 9, "time_started": 10, "time_ended": 11, "ip_address": 12},
            "parts": {"id": 0, "part_length": 1, "part_num": 2, "part_type": 3, "part_bool": 4}}
 tables = {0: "jobs", 1: "workcenters", 2: "parts"}
 bool_vals = {"parts": 4, "workcenters": 3}
@@ -38,21 +40,22 @@ class DataBase:
             'ac01aa', 'something', 1)''')
             c.execute('''INSERT INTO parts (id, part_num, part_type) VALUES ('4', 'ba00ab', 'other')''')
 
-            c.execute('''CREATE TABLE jobs (id varchar(30) PRIMARY KEY, partid varchar(30), capacity int, scrap int 
-            DEFAULT 0, rate decimal(5, 2) DEFAULT 0.0, input_length int, output_detected int, finished_length_raw 
-            int, time_started int, time_ended int, FOREIGN KEY (partid) REFERENCES parts (id))''')
-            c.execute('''INSERT INTO jobs (id, partid, capacity, rate) VALUES ('1', '1', 50, 0.0)''')
+            c.execute('''CREATE TABLE jobs (id varchar(30) PRIMARY KEY, partid varchar(30), capacity int, completed 
+            int DEFAULT 0, scrap int DEFAULT 0, FOREIGN KEY (partid) REFERENCES parts (id))''')
+            c.execute('''INSERT INTO jobs (id, partid, capacity) VALUES ('1', '1', 50)''')
             c.execute('''INSERT INTO jobs (id, partid, capacity, scrap) VALUES ('2', '2', 100, 45)''')
-            c.execute('''INSERT INTO jobs (id, partid, capacity, time_started) VALUES ('3', '1', 120, 112020)''')
-            c.execute('''INSERT INTO jobs (id, partid, capacity, output_detected) VALUES ('4', '3', 25, 20)''')
+            c.execute('''INSERT INTO jobs (id, partid, capacity) VALUES ('3', '1', 120)''')
+            c.execute('''INSERT INTO jobs (id, partid, capacity, completed) VALUES ('4', '3', 25, 20)''')
 
             c.execute('''CREATE TABLE workcenters (id varchar(30) PRIMARY KEY, jobid varchar(30), feed_wheel_diameter 
             decimal(5, 2), output_toggle boolean DEFAULT 0 CHECK (output_toggle IN (0, 1)), threshold int DEFAULT 50, 
-            state int DEFAULT 0, FOREIGN KEY (jobid) REFERENCES jobs (id))''')
+            state int DEFAULT 0, rate decimal(5, 2) DEFAULT 0.0, input_length int, output_detected int, 
+            finished_length_raw int, time_started int, time_ended int, ip_address varchar(15), FOREIGN KEY (jobid) 
+            REFERENCES jobs (id))''')
             c.execute('''INSERT INTO workcenters (id, state, feed_wheel_diameter, output_toggle) VALUES ('1', 0, 
             2.34, 1)''')
             c.execute('''INSERT INTO workcenters (id, jobid, state, threshold) VALUES ('2', '1', 1, 45)''')
-            c.execute('''INSERT INTO workcenters (id, jobid, state) VALUES ('3', '2', 0)''')
+            c.execute('''INSERT INTO workcenters (id, jobid, state, ip_address) VALUES ('3', '2', 0, '1.1.1.1')''')
             c.execute('''INSERT INTO workcenters (id, state, output_toggle) VALUES ('4', 1, 1)''')
             conn.commit()
         except sqlite3.Error as err:
