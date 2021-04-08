@@ -72,7 +72,7 @@ class DataBase:
 
     # return a row with the matching id from the specified table or None
     # also returns an error if one occurred
-    def get(self, table, id):
+    def get(self, table, rid):
         if not self.__initialized:
             return None, RuntimeError("DB not initialized")
         if type(table) == int and table < len(tables):
@@ -85,19 +85,21 @@ class DataBase:
             return None, err
         c = conn.cursor()
         try:
-            c.execute("SELECT * FROM {} WHERE id = ?".format(table), (id,))
+            c.execute("SELECT * FROM {} WHERE id = ?".format(table), (rid,))
         except sqlite3.Error as err:
             conn.close()
             return None, err
         row = c.fetchone()
-        newrow = list(row)
-        if table in bool_vals:
-            newrow[bool_vals[table]] = bool(newrow[bool_vals[table]])
+        if row is not None:
+            row = list(row)
+            if table in bool_vals:
+                row[bool_vals[table]] = bool(row[bool_vals[table]])
+            row = tuple(row)
         conn.close()
-        return tuple(newrow), None
+        return row, None
 
     # insert a job into the table and return an error if one occurred
-    def insert(self, table, id, **columns):
+    def insert(self, table, rid, **columns):
         if not self.__initialized:
             return RuntimeError("DB not initialized")
         if type(table) == int and table < len(tables):
@@ -118,7 +120,7 @@ class DataBase:
         c = conn.cursor()
         try:
             c.execute('''INSERT INTO {} ({}) VALUES ({})'''.format(table, insert_cols, insert_values),
-                      (id,) + tuple(columns.values()))
+                      (rid,) + tuple(columns.values()))
             conn.commit()
         except sqlite3.Error as err:
             conn.close()
@@ -128,7 +130,7 @@ class DataBase:
 
     # update a job with the matching id and return the old row or None
     # returns an error if one occurred
-    def update(self, table, id, **columns):
+    def update(self, table, rid, **columns):
         if not self.__initialized:
             return None, RuntimeError("DB not initialized")
         if type(table) == int and table < len(tables):
@@ -147,22 +149,24 @@ class DataBase:
             return None, err
         c = conn.cursor()
         try:
-            c.execute("SELECT * FROM {} WHERE id = ?".format(table), (id,))
+            c.execute("SELECT * FROM {} WHERE id = ?".format(table), (rid,))
             row = c.fetchone()
-            newrow = list(row)
-            if table in bool_vals:
-                newrow[bool_vals[table]] = bool(newrow[bool_vals[table]])
-            c.execute("UPDATE {} SET {} WHERE id = ?".format(table, update_str), tuple(columns.values()) + (id,))
+            if row is not None:
+                row = list(row)
+                if table in bool_vals:
+                    row[bool_vals[table]] = bool(row[bool_vals[table]])
+                row = tuple(row)
+            c.execute("UPDATE {} SET {} WHERE id = ?".format(table, update_str), tuple(columns.values()) + (rid,))
             conn.commit()
         except sqlite3.Error as err:
             conn.close()
             return None, err
         conn.close()
-        return tuple(newrow), None
+        return row, None
 
     # delete a job from the table and return the row that was deleted or None
     # also returns an error if one occurred
-    def delete(self, table, id):
+    def delete(self, table, rid):
         if not self.__initialized:
             return None, RuntimeError("DB not initialized")
         if type(table) == int and table < len(tables):
@@ -175,18 +179,20 @@ class DataBase:
             return None, err
         c = conn.cursor()
         try:
-            c.execute("SELECT * FROM {} WHERE id = ?".format(table), (id,))
+            c.execute("SELECT * FROM {} WHERE id = ?".format(table), (rid,))
             row = c.fetchone()
-            newrow = list(row)
-            if table in bool_vals:
-                newrow[bool_vals[table]] = bool(newrow[bool_vals[table]])
-            c.execute("DELETE FROM {} WHERE id = ?".format(table), (id,))
+            if row is not None:
+                row = list(row)
+                if table in bool_vals:
+                    row[bool_vals[table]] = bool(row[bool_vals[table]])
+                row = tuple(row)
+            c.execute("DELETE FROM {} WHERE id = ?".format(table), (rid,))
             conn.commit()
         except sqlite3.Error as err:
             conn.close()
             return None, err
         conn.close()
-        return tuple(newrow), None
+        return row, None
 
     def clear_tables(self):
         if not self.__initialized:
@@ -206,7 +212,7 @@ class DataBase:
         conn.close()
         return None
 
-    def exists(self, table, id):
+    def exists(self, table, rid):
         if not self.__initialized:
             return None, RuntimeError("DB not initialized")
         if type(table) == int and table < len(tables):
@@ -219,7 +225,7 @@ class DataBase:
             return None, err
         c = conn.cursor()
         try:
-            c.execute("SELECT COUNT(*) FROM {} WHERE id = ?".format(table), (id,))
+            c.execute("SELECT COUNT(*) FROM {} WHERE id = ?".format(table), (rid,))
             count = c.fetchone()[0]
         except sqlite3.Error as err:
             conn.close()
