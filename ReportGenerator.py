@@ -81,7 +81,6 @@ def piePlot():
 
     fig, ax = plt.subplots(figsize=(8, 5))
     wedges, texts= ax.pie(data,
-
                                       explode=explode,
                                       shadow=True,
                                       colors=colors,
