@@ -14,7 +14,7 @@ def sendMessage():
     msgRoot['From'] = strFrom
     msgRoot['To'] = strTo
     msgRoot.preamble = 'This is a multi-part message in MIME format.'
-
+    
     # Encapsulate the plain and HTML versions of the message body in an
     # 'alternative' part, so message agents can decide which they want to display.
     msgAlternative = MIMEMultipart('alternative')
