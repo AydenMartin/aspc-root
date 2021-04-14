@@ -98,6 +98,33 @@ class DataBase:
         conn.close()
         return row, None
 
+    # return all rows in a table
+    def get_all(self, table):
+        if not self.__initialized:
+            return None, RuntimeError("DB not initialized")
+        if type(table) == int and table < len(tables):
+            table = tables[table]
+        if table not in tables.values():
+            return None, RuntimeError("Invalid table")
+        try:
+            conn = sqlite3.connect(self.__file_path)
+        except sqlite3.Error as err:
+            return None, err
+        c = conn.cursor()
+        try:
+            c.execute("SELECT * FROM {}".format(table))
+        except sqlite3.Error as err:
+            conn.close()
+            return None, err
+        rows = c.fetchall()
+        if table in bool_vals:
+            for index, row in enumerate(rows):
+                row = list(row)
+                row[bool_vals[table]] = bool(row[bool_vals[table]])
+                rows[index] = tuple(row)
+        conn.close()
+        return rows, None
+
     # insert a job into the table and return an error if one occurred
     def insert(self, table, rid, **columns):
         if not self.__initialized:
