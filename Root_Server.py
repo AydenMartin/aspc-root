@@ -55,10 +55,16 @@ def data_transfer(conn):
             conn.close
             exit()
 
-        data = data.decode("utf-8")
+        data = data.decode("utf-8").split(':')
 
         #if setup
-        data = papi.get_workstationData(data)
+        if (data[0] == "SETUP"):
+            data = papi.get_workstationData(data)
+
+        if(data[0] == "NEW_JOB"):
+
+        if(data[0] == "JOB_IN_Progress"):
+            data = data[1]
 
         try:
             conn.sendall(json.dumps(data).encode("utf-8"))
