@@ -3,48 +3,24 @@ import requests
 import datetime
 from types import SimpleNamespace
 from requests.auth import HTTPBasicAuth
-#Master List
-#Display workcenter status, we can pull this
-#Part number
-#   [Manual] Part progression (total length / part)
-#   [Calculated] Production rate (rolling average)
-
-#Workcenter
-
-#   [From Plex] Present Job #
-#   [From Plex] Job Part number
-#   [From Plex] Job Tote Capacity
-#   [Manual] Linear conversion (Roller diameter to calculate off of rotary encoder)
-#   [Manual] Threshold for parts made at speed in SET UP (default set for [50]
-
-#We can get workcenter status entries through POM API
-
-
-#Questions
-#   What information do you want displayed on the root box.
-#   What information do you want emailed to you and when
-#   What plex updates do you want automated
-#   What information are we sending to branch/leaf
-#   Are we requesting data from workstations of listening for it.
-
-#DATA TO SEND TO NODE
-
-#Workstation ID - workcenterStr
-#Part ID - workcenterStr
-#Job ID - workcenterStr
-#Part Length
-#Part type workcenter(partnumber) + Job scheduling
-#Part capacity, num to be made ListJobs quantity
-#Feed wheel diameter, diamerter of wheelthat feeds material into machine
-#42266118-0b4f-43ef-889e-13a2712c188e
 
 def getMostRecentJobData(jsonData):
+    """
+    Ensures that the most recent job associated with a workstation is selected
+
+    :return: most recent job, or resurns error if there are no jobs in setup mode associated with given workstation
+    """
     for element in jsonData:
         if(element.workcenterStatus == 'Setup'):
             return element
-    return "WNIS"
+    return "error"
 
 def get_workstationData(workcenterID):
+    """
+    Makes the needed api calls to get job data for the sensors
+
+    :return: Json string containing the data for the sensots
+    """
     header = {'Content-Type': 'application/json',
                'X-Plex-Connect-Api-Key': 'sb5GlSUdLsb1DGksq9BPz0wBQwEuKXJp'}
 
@@ -85,9 +61,12 @@ def get_workstationData(workcenterID):
     return ("{part_id: " + str(partData.id) + ",Job_Id : " + str(newData.jobId) + ", Part_type: " + str(partData.type) +  ",Part_Capactity: " +str(jobData.quantity) + "}")
 
 
-#get_workstationData("42266118-0b4f-43ef-889e-13a2712c188e")
-
 def updateScrap():
+    """
+    Attempts to update scrap using the old PLEX API, not currently functional
+
+    :return: None
+    """
     user = "AutoSpringIIoTWs@plex.com"
     passwrd = "4b04edc-103a-4"
     url = "https://test.cloud.plex.com/api/datasources/10363/execute"
@@ -99,5 +78,3 @@ def updateScrap():
     print("Body: " + str(res.request.body))
     print("Status Code: " + str(res.status_code))
     print("Response Message: " + str(res.json()))
-
-updateScrap()

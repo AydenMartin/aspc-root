@@ -18,6 +18,11 @@ jsonFormat = {"part_id" : 0,         #id for the type of part being made
 
 
 def setup_server():
+    """
+    Initialize server
+
+    :return: None
+    """
     sckt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     print("Socket created.")
     try:
@@ -30,19 +35,23 @@ def setup_server():
 
 
 def setup_connection(socket):
+    """
+    Sets up a connection with a given socket
 
+    :return: None
+    """
     connection, address = socket.accept()
     print("Connected to: " + address[0] + ":" + str(address[1]))
     t = threading.Thread(target=data_transfer,args=(connection,))
     t.start()
     setup_connection(socket)
 
-
-def PROCESS(data):
-    requests.new_data(data)
-
-
 def data_transfer(conn):
+    """
+    Continuously listen for communication from sensors
+
+    :return: None
+    """
     # A big loop that sends/receives data until told not to.
     while True:
         # Receive the data
