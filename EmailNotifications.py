@@ -1,20 +1,26 @@
-# Define these once; use them twice!
 from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import ReportGenerator as rg
+
 def sendMessage():
+    """
+    Send an email with an embedded html page, meant for use in reports
+
+    :return: None
+    """
     strFrom = 'aspcrootserver@gmail.com'
     strTo = 'aspcrootserver@gmail.com'
     rg.genSigStrGraph_Example()
     rg.piePlot()
+
     # Create the root message and fill in the from, to, and subject headers
-    msgRoot =  MIMEMultipart('related')
+    msgRoot = MIMEMultipart('related')
     msgRoot['Subject'] = 'test message'
     msgRoot['From'] = strFrom
     msgRoot['To'] = strTo
     msgRoot.preamble = 'This is a multi-part message in MIME format.'
-
+    
     # Encapsulate the plain and HTML versions of the message body in an
     # 'alternative' part, so message agents can decide which they want to display.
     msgAlternative = MIMEMultipart('alternative')
