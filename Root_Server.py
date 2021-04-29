@@ -2,7 +2,6 @@ import socket
 import SpringDB_Requests as requests
 import threading
 import json
-import PLEXAPI as papi
 host = '127.0.0.1'  #127 == local, use wlan ip for non local connection
 port = 5571         #any port is fine, just make sure both parties know it
 
@@ -55,24 +54,16 @@ def data_transfer(conn):
             conn.close
             exit()
 
-        data = data.decode("utf-8").split(':')
-
-        #if setup
-        if (data[0] == "SETUP"):
-            data = papi.get_workstationData(data)
-
-        if(data[0] == "NEW_JOB"):
-
-        if(data[0] == "JOB_IN_Progress"):
-            data = data[1]
+        print(data.decode("utf-8"))
 
         try:
-            conn.sendall(json.dumps(data).encode("utf-8"))
+            conn.sendall(json.dumps(jsonFormat).encode("utf-8"))
         except Exception as ex:
             print("connection closed due to \n" + str(ex))
             conn.close
             exit()
 
     conn.close()
+
 
 s = setup_server()
